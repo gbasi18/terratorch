@@ -31,7 +31,7 @@ except Exception as e:
     import_error = e
 
 try:
-    from .text.text_tokenizer import CoordsTokenizer, CaptionTokenizer
+    from .text.text_tokenizer import CoordsTokenizer, CaptionTokenizer, WeatherTokenizer
     tokenizers_available = True
     import_error_tokenizers = None
 except Exception as e:
@@ -54,6 +54,8 @@ __all__ = [
     "terramind_v01_tokenizer_lulc",
     "terramind_v01_caption_tokenizer",
     "terramind_v1_coords_tokenizer",
+    "terramind_v1_temperature_hourly_fixed_binning_tokenizer",
+    "terramind_v1_temperature_daily_fixed_binning_tokenizer"
 ]
 
 pretrained_weights = {
@@ -83,6 +85,10 @@ pretrained_weights = {
     },
     "terramind_v1_coords_tokenizer": {
         "hf_hub_id": "ibm-esa-geospatial/TerraMind-1.0-Tokenizer-Coords",
+        "hf_hub_filename": "config.json",
+    },
+    "terramind_v1_weather_fixed_binning_tokenizer": {
+        "hf_hub_id": "ibm-esa-geospatial/TerraMind-1.0-Tokenizer-Weather-Fixed-Binning",
         "hf_hub_filename": "config.json",
     },
     "terramind_v01_tokenizer_s2l2a": {
@@ -453,3 +459,55 @@ def terramind_v1_coords_tokenizer(pretrained=True, tokenizer_file=None, *args, *
         tokenizer_file=tokenizer_file,
         *args, **kwargs
     )
+
+#! PRECIP_VARIABLES_DAILY = ["prec_min", "prec_max", "prec_sum"]
+#! TEMP_VARIABLES_DAILY   = ["t_min", "t_max", "t_mean"] those get concatenated e.g ["t_min = lower --> upper",...,"t_max = lower --> upper",....,"t_mean = lower --> upper"]
+
+#! PRECIP_VARIABLES = ["prec"]
+#! TEMP_VARIABLES   = ["temp"] # this is presented 
+
+
+def terramind_v1_temperature_hourly_fixed_binning_tokenizer(pretrained=True, tokenizer_file=None, *args, **kwargs):
+    if not tokenizers_available:
+        warnings.warn(f"Cannot import tokenizers. "
+                      f"\nMake sure to install `pip install tokenizers`.")
+        raise import_error_tokenizers
+
+    if pretrained and tokenizer_file is not None:
+        tokenizer_file = hf_hub_download(
+            repo_id=pretrained_weights["terramind_v1_weather_fixed_binning_tokenizer"]["hf_hub_id"],
+            filename=pretrained_weights["terramind_v1_weather_fixed_binning_tokenizer"]["hf_hub_filename"]
+        )
+
+    return WeatherTokenizer(
+        tokenizer_file=tokenizer_file,
+        variables= ["temp"]
+        *args, **kwargs
+    )
+    
+
+
+def terramind_v1_temperature_daily_fixed_binning_tokenizer(pretrained=True, tokenizer_file=None,variables =["t_min", "t_max", "t_mean"], *args, **kwargs):
+    #! Here we can select for example only "t_min"  or "t_min","t_max" ... and all combinations. 
+    # !Of course in case we select a subset of variables we need to input a tensor of an according shape
+    #! e.g if we have variables= ["t_min","t_max"] the tensor to tokenize has to be of shape (B,S_len,2)
+    
+    if not tokenizers_available:
+        warnings.warn(f"Cannot import tokenizers. "
+                      f"\nMake sure to install `pip install tokenizers`.")
+        raise import_error_tokenizers
+
+    if pretrained and tokenizer_file is not None:
+        tokenizer_file = hf_hub_download(
+            repo_id=pretrained_weights["terramind_v1_weather_fixed_binning_tokenizer"]["hf_hub_id"],
+            filename=pretrained_weights["terramind_v1_weather_fixed_binning_tokenizer"]["hf_hub_filename"]
+        )
+
+    return WeatherTokenizer(
+        tokenizer_file=tokenizer_file,
+        variables= variables 
+        *args, **kwargs
+    )
+
+
+
